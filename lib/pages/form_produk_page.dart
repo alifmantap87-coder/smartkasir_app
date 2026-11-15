@@ -208,7 +208,7 @@ class _FormProdukPageState extends State<FormProdukPage> {
 
               // 3. Dropdown kategori
               DropdownButtonFormField<String>(
-                value: _kategoriTerpilih,
+                initialValue: _kategoriTerpilih,
                 decoration: InputDecoration(
                   labelText: 'Kelompok Kategori',
                   prefixIcon: const Icon(Icons.category_outlined),
