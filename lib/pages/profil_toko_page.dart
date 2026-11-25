@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../helpers/database_helper.dart';
 import 'kelola_karyawan_page.dart';
+import 'kelola_pelanggan_page.dart';
 
 // Halaman profil toko & footer struk (SharedPreferences)
 class ProfilTokoPage extends StatefulWidget {
@@ -15,11 +17,13 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
   final _alamatController = TextEditingController();
   final _noWaController = TextEditingController();
   final _footerController = TextEditingController();
-  // Tantangan 3: controller Instagram toko
+  // Tantangan M12 No.3: Instagram toko
   final _igController = TextEditingController();
 
   bool _sedangMenyimpan = false;
   String _activeCashierName = 'Belum Ditentukan';
+  // Tantangan M13 No.3: jumlah pelanggan terdaftar
+  int _jumlahPelanggan = 0;
 
   @override
   void initState() {
@@ -35,6 +39,13 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
     _footerController.dispose();
     _igController.dispose();
     super.dispose();
+  }
+
+  // Hitung total pelanggan dari SQLite
+  Future<void> _muatJumlahPelanggan() async {
+    final jumlah = await DatabaseHelper.instance.countPelanggan();
+    if (!mounted) return;
+    setState(() => _jumlahPelanggan = jumlah);
   }
 
   // Baca pengaturan toko dari SharedPreferences
@@ -53,9 +64,10 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
       _activeCashierName =
           prefs.getString('active_cashier_name') ?? 'Belum Ditentukan';
     });
+    await _muatJumlahPelanggan();
   }
 
-  // Simpan pengaturan toko ke SharedPreferences
+  // Simpan pengaturan toko
   Future<void> _simpanProfilToko() async {
     setState(() => _sedangMenyimpan = true);
 
@@ -125,9 +137,10 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
                         const Text(
                           'KASIR AKTIF SHIFT INI',
                           style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.grey,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Text(
                           _activeCashierName,
@@ -142,7 +155,8 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const KelolaKaryawanPage()),
+                          builder: (context) => const KelolaKaryawanPage(),
+                        ),
                       );
                       _muatProfilToko();
                     },
@@ -152,14 +166,60 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Menu Data Pelanggan & Lokasi GPS (M13)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Color(0xFF0D9488),
+                  child: Icon(Icons.people_alt, color: Colors.white, size: 20),
+                ),
+                title: const Text(
+                  'Data Pelanggan & Lokasi GPS',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                // Tantangan M13 No.3: subtitle dinamis
+                subtitle: Text(
+                  '$_jumlahPelanggan Member Pelanggan Terdaftar',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                trailing:
+                    const Icon(Icons.chevron_right, color: Color(0xFF1E3A8A)),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const KelolaPelangganPage(),
+                    ),
+                  );
+                  // Perbarui counter setelah kembali
+                  _muatJumlahPelanggan();
+                },
+              ),
+            ),
             const SizedBox(height: 20),
 
             const Text(
               'IDENTITAS USAHA & STRUK KASIR',
               style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Color(0xFF1E3A8A)),
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Color(0xFF1E3A8A),
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -169,8 +229,8 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
               decoration: InputDecoration(
                 labelText: 'Nama Toko / Usaha',
                 prefixIcon: const Icon(Icons.store),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -184,8 +244,8 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
               decoration: InputDecoration(
                 labelText: 'Alamat Toko',
                 prefixIcon: const Icon(Icons.location_on_outlined),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -199,8 +259,8 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
               decoration: InputDecoration(
                 labelText: 'Nomor WhatsApp / Kontak Toko',
                 prefixIcon: const Icon(Icons.phone_outlined),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -215,22 +275,22 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
                 labelText: 'Catatan Kaki Struk (Footer Nota)',
                 hintText: 'Contoh: Terima kasih atas kunjungan Anda!',
                 prefixIcon: const Icon(Icons.receipt_outlined),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 filled: true,
                 fillColor: Colors.white,
               ),
             ),
             const SizedBox(height: 14),
 
-            // 5. Instagram toko (Tantangan 3)
+            // 5. Instagram toko
             TextFormField(
               controller: _igController,
               decoration: InputDecoration(
                 labelText: 'Instagram Toko (@nama_toko)',
                 prefixIcon: const Icon(Icons.camera_alt_outlined),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -259,8 +319,8 @@ class _ProfilTokoPageState extends State<ProfilTokoPage> {
                 _sedangMenyimpan
                     ? 'Menyimpan Pengaturan...'
                     : 'Simpan Profil Toko',
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 15),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
             ),
           ],
